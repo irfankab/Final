@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Math Game</title> 
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&amp;family=Montserrat:wght@500&amp;display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        #welcome {
+            font-size: 2em;
+            animation: fadeIn 2s forwards;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        #score {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: none;
+        }
+        #finalScore {
+            font-size: 1.8em;
+            color: #333;
+            margin-top: 20px;
+            display: none; /* Initially hidden */
+        }
+        button {
+            background-color: #ccc;
+            color: #333;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.1s; 
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: #bbb;
+        }
+        button:active {
+            transform: scale(0.95); 
+            background-color: #aaa; 
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100px;
+            margin-top: 10px;
+            transition: border-color 0.3s;
+        }
+        input[type="number"]:focus {
+            border-color: #888;
+            outline: none;
+        }
+        #timeInput {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        #question, #options, #timer, #operation, #difficulty {
+            margin: 20px;
+            display: none;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        #timer {
+            font-size: 1.5em;
+            color: red;
+        }
+        #startButton {
+            display: block;
+            margin: 20px auto;
+        }
+    </style> 
+</head> 
+<body> 
+    <div id="welcome">A game by Eveagle Studios</div>
+    <h1>Math Game</h1> 
+    <div id="score">Score: 0 | Attempts left: <span id="attemptsLeft">3</span></div> 
+    <div id="finalScore"></div> <!-- New div for displaying final score -->
+    <button id="startButton" onclick="startGame()" style="display: none;">Start</button> 
+    <button id="quitButton" onclick="quitGame()" style="display: none;">Quit</button> 
+
+    <div id="operation"> 
+        <h2>Select Arithmetic Operation</h2> 
+        <button onclick="setOperation('+')">Addition</button> 
+        <button onclick="setOperation('-')">Subtraction</button> 
+        <button onclick="setOperation('×')">Multiplication</button> 
+        <button onclick="setOperation('÷')">Division</button> 
+    </div> 
+
+    <div id="difficulty"> 
+        <h2>Select Difficulty Level</h2> 
+        <button onclick="setDifficulty('easy')">Easy</button> 
+        <button onclick="setDifficulty('medium')">Medium</button> 
+        <button onclick="setDifficulty('hard')">Hard</button> 
+    </div> 
+
+    <div id="timeInput" style="display: none;"> 
+        <h2>Set Total Play Time (seconds)</h2> 
+        <input type="number" id="totalTime" min="10" max="300" value="60"> 
+        <button onclick="startQuestions()">Start Game</button> 
+    </div> 
+
+    <div id="timer">Time Left: <span id="timeLeftDisplay">60</span> seconds</div> 
+    <div id="question"></div> 
+    <div id="options"></div> 
+    <div id="result"></div> 
+
+    <script>
+        let num1, num2, operation, correctAnswer;
+        let difficulty;
+        let attempts;
+        let score = 0; 
+        let totalTime; 
+        let timeLeft; 
+        let timer; 
+
+        window.onload = () => {
+            document.getElementById('welcome').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('welcome').style.display = 'none';
+                document.getElementById('startButton').style.display = 'block';
+            }, 3000); // Show welcome for 3 seconds
+        };
+
+        function startGame() {
+            document.getElementById('startButton').style.display = 'none';
+            document.getElementById('operation').style.display = 'block';
+        }
+
+        function setOperation(op) {
+            operation = op;
+            document.getElementById('operation').style.display = 'none';
+            document.getElementById('difficulty').style.display = 'block';
+        }
+
+        function setDifficulty(level) {
+            difficulty = level;
+            document.getElementById('difficulty').style.display = 'none';
+            document.getElementById('timeInput').style.display = 'block';
+        }
+
+        function startQuestions() {
+            totalTime = parseInt(document.getElementById('totalTime').value);
+            timeLeft = totalTime; 
+            document.getElementById('timeInput').style.display = 'none';
+            document.getElementById('score').style.display = 'block'; 
+            document.getElementById('timer').style.display = 'block'; 
+            document.getElementById('quitButton').style.display = 'block'; 
+            attempts = 3; 
+            score = 0; 
+            updateScoreboard(); 
+            startTimer(); 
+            nextQuestion(); 
+        }
+
+        function generateQuestion() {
+            num1 = getRandomInt(difficulty);
+            num2 = getRandomInt(difficulty);
+            correctAnswer = calculateAnswer(num1, num2, operation);
+            document.getElementById('question').innerText = `What is ${num1} ${operation} ${num2}?`;
+            generateOptions(correctAnswer);
+            document.getElementById('result').innerText = '';
+            document.getElementById('question').style.display = 'block';
+            document.getElementById('options').style.display = 'block';
+        }
+
+        function getRandomInt(level) {
+            switch (level) {
+                case 'easy': return Math.floor(Math.random() * 10) + 1;
+                case 'medium': return Math.floor(Math.random() * 50) + 1;
+                case 'hard': return Math.floor(Math.random() * 100) + 1;
+            }
+        }
+
+        function calculateAnswer(num1, num2, operation) {
+            switch (operation) {
+                case '+': return num1 + num2;
+                case '-': return num1 - num2;
+                case '×': return num1 * num2;
+                case '÷': return (num1 / num2).toFixed(2);
+            }
+        }
+
+        function generateOptions(correctAnswer) {
+            const options = new Set();
+            options.add(correctAnswer);
+            while (options.size < 4) {
+                const wrongAnswer = generateConfusingOption(correctAnswer);
+                options.add(wrongAnswer);
+            }
+            const optionsArray = Array.from(options).sort(() => Math.random() - 0.5);
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            optionsArray.forEach(option => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.onclick = () => checkAnswer(option);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function generateConfusingOption(correctAnswer) {
+            const range = 5;
+            const randomOffset = Math.floor(Math.random() * (range * 2 + 1)) - range;
+            return correctAnswer + randomOffset;
+        }
+
+        function checkAnswer(selectedAnswer) {
+            if (selectedAnswer == correctAnswer) {
+                score++;
+            } else {
+                attempts--;
+            }
+            updateScoreboard();
+            if (attempts > 0 && timeLeft > 0) {
+                nextQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame();
+                } else {
+                    timeLeft--;
+                    document.getElementById('timeLeftDisplay').innerText = timeLeft;
+                }
+            }, 1000);
+        }
+
+        function updateScoreboard() {
+            document.getElementById('score').innerText = `Score: ${score} | Attempts left: ${attempts}`;
+        }
+
+        function nextQuestion() {
+            generateQuestion();
+        }
+
+        function endGame() {
+            clearInterval(timer);
+            document.getElementById('options').style.display = 'none';
+            document.getElementById('question').style.display = 'none'; // Hide the question
+            document.getElementById('timer').style.display = 'none'; // Hide the timer
+            displayFinalScore(); // Show final score on the page
+        }
+
+        function displayFinalScore() {
+            const finalScoreDiv = document.getElementById('finalScore');
+            finalScoreDiv.innerText = `Game over! Your final score is: ${score}`;
+            finalScoreDiv.style.display = 'block'; // Show the final score
+            const restartButton = document.createElement('button');
+            restartButton.innerText = 'Restart Game';
+            restartButton.onclick = restartGame; // Call restartGame function
+            finalScoreDiv.appendChild(restartButton); // Add restart button
+            // Show the quit button to go back to the main menu
+            document.getElementById('quitButton').style.display = 'block'; 
+        }
+
+        function restartGame() {
+            // Reset game settings
+            score = 0;
+            attempts = 3;
+            timeLeft = totalTime; // Reset time left to the total time set
+            updateScoreboard(); 
+            document.getElementById('finalScore').style.display = 'none'; // Hide final score
+            startTimer(); 
+            nextQuestion(); 
+        }
+
+        function quitGame() {
+            // Reset all game settings and display initial state
+            score = 0;
+            attempts = 3;
+            operation = null;
+            difficulty = null;
+            totalTime = null; // Clear out the previous settings
+
+            document.getElementById('score').style.display = 'none';
+            document.getElementById('finalScore').style.display = 'none'; // Hide final score
+            document.getElementById('question').style.display = 'none';
+            document.getElementById('options').style.display = 'none';
+            document.getElementById('timer').style.display = 'none'; // Reset timer display
+            document.getElementById('timeLeftDisplay').innerText = '';
+
+            // Show the start button to begin a new game
+            document.getElementById('startButton').style.display = 'block';
+            document.getElementById('quitButton').style.display = 'none'; // Hide quit button
+            document.getElementById('operation').style.display = 'none'; // Hide operation selection
+            document.getElementById('difficulty').style.display = 'none'; // Hide difficulty selection
+            document.getElementById('timeInput').style.display = 'none'; // Hide time input
+        }
+    </script> 
+
+</body></html>
